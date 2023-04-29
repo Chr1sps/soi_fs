@@ -13,7 +13,10 @@ int main(int argc, char **argv)
         for (std::string line, command, first_arg, second_arg;
              std::cout << ":> "; command = "", first_arg = "", second_arg = "")
         {
-            getline(std::cin, line);
+            if (!getline(std::cin, line))
+            {
+                return 0;
+            }
             std::stringstream line_stream(line);
             line_stream >> command >> first_arg >> second_arg;
             if (command == "ls")
@@ -31,8 +34,8 @@ int main(int argc, char **argv)
                 fs.cpvirtual(first_arg, second_arg);
             else if (command == "mkdir")
                 fs.mkdir(first_arg);
-//            else if (command == "rmdir")
-//                fs.rmdir(first_arg);
+            //            else if (command == "rmdir")
+            //                fs.rmdir(first_arg);
             else if (command == "rm")
                 fs.rm(first_arg);
             else if (command == "extend")
@@ -47,16 +50,16 @@ int main(int argc, char **argv)
             {
                 std::cout << "ls <dir> - prints dir content." << std::endl;
                 std::cout
-                        << "upload <local_file> <virtual_file> - copies a local file into the file system."
-                        << std::endl;
+                    << "upload <local_file> <virtual_file> - copies a local file into the file system."
+                    << std::endl;
                 std::cout
-                        << "extract <virtual_file> <local_file> - extracts a virtual file into a local file."
-                        << std::endl;
+                    << "extract <virtual_file> <local_file> - extracts a virtual file into a local file."
+                    << std::endl;
                 std::cout << "extend <file> <bytes> - extends file size."
                           << std::endl;
                 std::cout
-                        << "truncate <file> <bytes> - truncates file size."
-                        << std::endl;
+                    << "truncate <file> <bytes> - truncates file size."
+                    << std::endl;
                 std::cout << "df - prints file system usage." << std::endl;
                 std::cout << "rm <file> - deletes a virtual file."
                           << std::endl;

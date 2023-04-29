@@ -13,8 +13,8 @@ class FileSystem
     static const int INODE_PRIMARY_TABLE_SIZE = 15;
     static const int INODE_BLOCK_POINTER_TABLE_SIZE = BLOCK_SIZE / 4;
     static const int MAX_INODE_BLOCK_COUNT =
-            INODE_PRIMARY_TABLE_SIZE +
-            INODE_BLOCK_POINTER_TABLE_SIZE *
+        INODE_PRIMARY_TABLE_SIZE +
+        INODE_BLOCK_POINTER_TABLE_SIZE *
             (INODE_BLOCK_POINTER_TABLE_SIZE + 1);
 
     static const mask_type INODE_USED_MASK = 0b10000000;
@@ -22,7 +22,9 @@ class FileSystem
 
     enum FILE_TYPE
     {
-        FILE = 0b00100000, DIR = 0b01000000, LINK = 0b01100000
+        FILE = 0b00100000,
+        DIR = 0b01000000,
+        LINK = 0b01100000
     };
 
     static uint64_t get_current_time();
@@ -147,7 +149,6 @@ class FileSystem
 
     int find_unused_inode(); // git gud
 
-
 public:
     FileSystem(const std::string &, const int &);
 
@@ -163,7 +164,7 @@ public:
 
     void mkdir(const std::string &name);
 
-//    void rmdir(const std::string &dir_name);
+    //    void rmdir(const std::string &dir_name);
 
     void rm(const std::string &file_name); // done
 
@@ -176,5 +177,4 @@ public:
     std::string ls(const std::string &directory); // done
 
     std::string df(); // done
-
 };

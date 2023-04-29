@@ -8,13 +8,12 @@
 #include "fs.hpp"
 #include "exceptions.hpp"
 
-
 uint64_t FileSystem::get_current_time()
 {
     return std::chrono::duration_cast<std::chrono::seconds>(
-            std::chrono::system_clock::now()
-                    .time_since_epoch())
-            .count();
+               std::chrono::system_clock::now()
+                   .time_since_epoch())
+        .count();
 }
 
 int FileSystem::find_unused_inode()
@@ -34,12 +33,12 @@ int FileSystem::find_unused_inode()
 
 void FileSystem::write_superblock()
 {
+    this->drive->seekp(0);
     this->drive->write(reinterpret_cast<char *>(&superblock),
                        sizeof(superblock));
 }
 
-void
-FileSystem::insert_block_data(DataBlock &block, char *data, int size, int pos)
+void FileSystem::insert_block_data(DataBlock &block, char *data, int size, int pos)
 {
     char *data_pointer = data;
     int end_pos = pos + size;
@@ -101,7 +100,7 @@ int FileSystem::get_file_real_block_count(uint64_t size)
         INODE_PRIMARY_TABLE_SIZE + INODE_BLOCK_POINTER_TABLE_SIZE)
     {
         result += 1 + (data_block_count - INODE_PRIMARY_TABLE_SIZE - 1) /
-                      this->superblock.block_size;
+                          this->superblock.block_size;
     }
     return result;
 }
@@ -118,8 +117,7 @@ uint32_t FileSystem::find_unused_block()
     throw MemoryException();
 }
 
-[[nodiscard]]
-uint32_t FileSystem::allocate_block()
+[[nodiscard]] uint32_t FileSystem::allocate_block()
 {
     uint32_t new_block_index = find_unused_block();
     write_bitmap(new_block_index, true);
@@ -179,7 +177,7 @@ uint64_t FileSystem::read_table_block_pointer(const int &table_block_index,
                     reinterpret_cast<char *>(&pointer),
                     sizeof(uint32_t),
                     pointer_index *
-                    sizeof(uint32_t));
+                        sizeof(uint32_t));
     return pointer;
 }
 
@@ -206,7 +204,7 @@ void FileSystem::resize_file(int index, uint64_t new_size)
             {
                 inode.data_pointers[i] = new_block_index;
             }
-                // allocating secondary blocks
+            // allocating secondary blocks
             else if (i <
                      INODE_PRIMARY_TABLE_SIZE + INODE_BLOCK_POINTER_TABLE_SIZE)
             {
@@ -214,17 +212,15 @@ void FileSystem::resize_file(int index, uint64_t new_size)
                 if (i == INODE_PRIMARY_TABLE_SIZE)
                 {
                     inode.secondary_data_table_block = allocate_block();
-
                 }
                 int secondary_index = i - INODE_PRIMARY_TABLE_SIZE;
                 // writing to the secondary table block
                 this->write_table_block_pointer(
-                        inode.secondary_data_table_block,
-                        secondary_index,
-                        new_block_index);
-
+                    inode.secondary_data_table_block,
+                    secondary_index,
+                    new_block_index);
             }
-                // allocating ternary blocks
+            // allocating ternary blocks
             else if (i < MAX_INODE_BLOCK_COUNT)
             {
                 int ternary_intermediate_index = (i -
@@ -244,24 +240,22 @@ void FileSystem::resize_file(int index, uint64_t new_size)
                 if (ternary_data_index == 0)
                 {
                     this->write_table_block_pointer(
-                            inode.ternary_data_table_block,
-                            ternary_intermediate_index, allocate_block());
+                        inode.ternary_data_table_block,
+                        ternary_intermediate_index, allocate_block());
                 }
                 // writing actual data blocks
                 uint32_t intermediate_block_pointer =
-                        read_table_block_pointer(
-                                inode.ternary_data_table_block,
-                                ternary_intermediate_index);
+                    read_table_block_pointer(
+                        inode.ternary_data_table_block,
+                        ternary_intermediate_index);
                 uint32_t data_block_pointer = allocate_block();
                 write_table_block_pointer(intermediate_block_pointer,
                                           ternary_data_index,
                                           data_block_pointer);
             }
         }
-
-
     }
-        // truncating the file
+    // truncating the file
     else if (new_real_block_count < old_real_block_count)
     {
         for (int i = old_data_block_count - 1; i >= new_data_block_count; --i)
@@ -269,14 +263,13 @@ void FileSystem::resize_file(int index, uint64_t new_size)
             if (i < INODE_PRIMARY_TABLE_SIZE)
             {
                 release_block(inode.data_pointers[i]);
-
             }
             else if (i <
                      INODE_PRIMARY_TABLE_SIZE + INODE_BLOCK_POINTER_TABLE_SIZE)
             {
                 int secondary_index = i - INODE_PRIMARY_TABLE_SIZE;
                 release_block(read_table_block_pointer(
-                        inode.secondary_data_table_block, secondary_index));
+                    inode.secondary_data_table_block, secondary_index));
                 if (secondary_index == 0)
                 {
                     release_block(inode.secondary_data_table_block);
@@ -285,20 +278,20 @@ void FileSystem::resize_file(int index, uint64_t new_size)
             else if (i < MAX_INODE_BLOCK_COUNT)
             {
                 int ternary_intermediate_index =
-                        (i - INODE_PRIMARY_TABLE_SIZE -
-                         INODE_BLOCK_POINTER_TABLE_SIZE) /
-                        INODE_BLOCK_POINTER_TABLE_SIZE;
+                    (i - INODE_PRIMARY_TABLE_SIZE -
+                     INODE_BLOCK_POINTER_TABLE_SIZE) /
+                    INODE_BLOCK_POINTER_TABLE_SIZE;
                 int ternary_data_index =
-                        (i - INODE_PRIMARY_TABLE_SIZE -
-                         INODE_BLOCK_POINTER_TABLE_SIZE) %
-                        INODE_BLOCK_POINTER_TABLE_SIZE;
+                    (i - INODE_PRIMARY_TABLE_SIZE -
+                     INODE_BLOCK_POINTER_TABLE_SIZE) %
+                    INODE_BLOCK_POINTER_TABLE_SIZE;
 
                 uint32_t intermediate_block_pointer =
-                        read_table_block_pointer(
-                                inode.ternary_data_table_block,
-                                ternary_intermediate_index);
+                    read_table_block_pointer(
+                        inode.ternary_data_table_block,
+                        ternary_intermediate_index);
                 uint32_t data_block_pointer = read_table_block_pointer(
-                        intermediate_block_pointer, ternary_data_index);
+                    intermediate_block_pointer, ternary_data_index);
                 release_block(data_block_pointer);
                 if (ternary_data_index == 0)
                 {
@@ -309,9 +302,7 @@ void FileSystem::resize_file(int index, uint64_t new_size)
                     this->release_block(inode.ternary_data_table_block);
                 }
             }
-
         }
-
     }
 
     inode.size = new_size;
@@ -325,7 +316,6 @@ void FileSystem::write_file(int index, char *data, uint64_t size,
     Inode inode = this->read_inode(index);
     if (size == 0)
         return;
-
 
     uint64_t starting_block = pos / BLOCK_SIZE;
     int starting_block_offset = pos % BLOCK_SIZE;
@@ -368,7 +358,7 @@ void FileSystem::write_file(int index, char *data, uint64_t size,
         {
             int block_index = block - INODE_PRIMARY_TABLE_SIZE;
             uint64_t block_pointer = read_table_block_pointer(
-                    inode.secondary_data_table_block, block_index);
+                inode.secondary_data_table_block, block_index);
             write_block(block_pointer, data, end - start + 1, start);
         }
         else if (block < MAX_INODE_BLOCK_COUNT)
@@ -380,13 +370,12 @@ void FileSystem::write_file(int index, char *data, uint64_t size,
                                     INODE_BLOCK_POINTER_TABLE_SIZE) %
                                    INODE_BLOCK_POINTER_TABLE_SIZE;
             uint64_t intermediate_block_pointer = read_table_block_pointer(
-                    inode.ternary_data_table_block, intermediate_block_index);
+                inode.ternary_data_table_block, intermediate_block_index);
             uint64_t data_block_pointer = read_table_block_pointer(
-                    intermediate_block_pointer, data_block_index);
+                intermediate_block_pointer, data_block_index);
             write_block(data_block_pointer, data, end - start + 1, start);
         }
     }
-
 
     inode.last_modified = superblock.last_modified = get_current_time();
     inode.size = result_size;
@@ -399,7 +388,6 @@ void FileSystem::read_file(int index, char *dest, uint64_t size, uint64_t pos)
     Inode inode = this->read_inode(index);
     if (size == 0)
         return;
-
 
     uint64_t last_byte_read = size + pos - 1;
     if (last_byte_read >= inode.size)
@@ -414,7 +402,8 @@ void FileSystem::read_file(int index, char *dest, uint64_t size, uint64_t pos)
 
     for (uint64_t block_index = starting_block;
          block_index <=
-         ending_block; ++block_index, dest += BLOCK_SIZE)
+         ending_block;
+         ++block_index, dest += BLOCK_SIZE)
     {
         int start = (block_index == starting_block) ? (starting_block_offset)
                                                     : (0);
@@ -431,22 +420,22 @@ void FileSystem::read_file(int index, char *dest, uint64_t size, uint64_t pos)
         {
             int secondary_index = block_index - INODE_PRIMARY_TABLE_SIZE;
             uint64_t block_pointer = read_table_block_pointer(
-                    inode.secondary_data_table_block, secondary_index);
+                inode.secondary_data_table_block, secondary_index);
             read_from_block(block_pointer, dest, end - start + 1, start);
         }
         else if (block_index < MAX_INODE_BLOCK_COUNT)
         {
             int intermediate_block_index =
-                    (block_index - INODE_PRIMARY_TABLE_SIZE -
-                     INODE_BLOCK_POINTER_TABLE_SIZE) /
-                    INODE_BLOCK_POINTER_TABLE_SIZE;
+                (block_index - INODE_PRIMARY_TABLE_SIZE -
+                 INODE_BLOCK_POINTER_TABLE_SIZE) /
+                INODE_BLOCK_POINTER_TABLE_SIZE;
             int data_block_index = (block_index - INODE_PRIMARY_TABLE_SIZE -
                                     INODE_BLOCK_POINTER_TABLE_SIZE) %
                                    INODE_BLOCK_POINTER_TABLE_SIZE;
             uint64_t intermediate_block_pointer = read_table_block_pointer(
-                    inode.ternary_data_table_block, intermediate_block_index);
+                inode.ternary_data_table_block, intermediate_block_index);
             uint64_t data_block_pointer = read_table_block_pointer(
-                    intermediate_block_pointer, data_block_index);
+                intermediate_block_pointer, data_block_index);
             read_from_block(data_block_pointer, dest, end - start + 1, start);
         }
         if (block_index == ending_block)
@@ -455,7 +444,7 @@ void FileSystem::read_file(int index, char *dest, uint64_t size, uint64_t pos)
         }
     }
 
-    this->write_inode(index, inode);
+    // this->write_inode(index, inode);
 }
 
 void FileSystem::write_inode(int index, Inode &inode)
@@ -485,7 +474,7 @@ void FileSystem::write_bitmap(int index, const bool &data)
         existing = existing | index_bit;
     this->drive->seekp(bitmap_offset + index_byte);
     this->drive->put(existing);
-//    this->drive->putback(existing);
+    //    this->drive->putback(existing);
 }
 
 bool FileSystem::is_name_unique(const std::string name,
@@ -496,10 +485,10 @@ bool FileSystem::is_name_unique(const std::string name,
     for (uint64_t pos = 0; pos < remaining_size;)
     {
         uint32_t name_size, inode_pointer;
-        read_file(parent_index, reinterpret_cast<char *>( &inode_pointer ),
+        read_file(parent_index, reinterpret_cast<char *>(&inode_pointer),
                   sizeof(uint32_t), pos);
         pos += sizeof(uint32_t);
-        read_file(parent_index, reinterpret_cast<char *>( &name_size ),
+        read_file(parent_index, reinterpret_cast<char *>(&name_size),
                   sizeof(uint32_t), pos);
         pos += sizeof(uint32_t);
         char *name_buffer = new char[name_size + 1];
@@ -548,10 +537,10 @@ void FileSystem::remove_inode_from_dir(const uint32_t &parent_index,
     for (uint64_t pos = 0; pos < remaining_size;)
     {
         uint32_t name_size, inode_pointer;
-        read_file(parent_index, reinterpret_cast<char *>( &inode_pointer ),
+        read_file(parent_index, reinterpret_cast<char *>(&inode_pointer),
                   sizeof(uint32_t), pos);
         pos += sizeof(uint32_t);
-        read_file(parent_index, reinterpret_cast<char *>( &name_size ),
+        read_file(parent_index, reinterpret_cast<char *>(&name_size),
                   sizeof(uint32_t), pos);
         pos += sizeof(uint32_t);
         pos += sizeof(char) * name_size;
@@ -576,10 +565,10 @@ uint32_t FileSystem::get_dir_inode(const int &dir_index,
     for (uint64_t pos = 0; pos < remaining_size;)
     {
         uint32_t inode_pointer, name_size;
-        read_file(dir_index, reinterpret_cast<char *>( &inode_pointer ),
+        read_file(dir_index, reinterpret_cast<char *>(&inode_pointer),
                   sizeof(uint32_t), pos);
         pos += sizeof(uint32_t);
-        read_file(dir_index, reinterpret_cast<char *>( &name_size ),
+        read_file(dir_index, reinterpret_cast<char *>(&name_size),
                   sizeof(uint32_t), pos);
         pos += sizeof(uint32_t);
         char *name_buffer = new char[name_size + 1];
@@ -590,7 +579,6 @@ uint32_t FileSystem::get_dir_inode(const int &dir_index,
         {
             delete[] name_buffer;
             return inode_pointer;
-
         }
         delete[] name_buffer;
     }
@@ -615,9 +603,9 @@ uint32_t FileSystem::find_file_in_dir(const std::string &name)
         inters.erase(inters.begin());
     }
     uint32_t inode_index = 0;
-    for (auto &name: inters)
+    for (auto &inter_name : inters)
     {
-        inode_index = get_dir_inode(inode_index, name);
+        inode_index = get_dir_inode(inode_index, inter_name);
     }
     return inode_index;
 }
@@ -685,9 +673,7 @@ void FileSystem::create_file(const std::string &name, FILE_TYPE type)
     file_name = parent_dir.substr(dir_split_index + 1);
     parent_dir = parent_dir.substr(0, dir_split_index + 1);
     create_file(file_name, parent_dir, type);
-
 }
-
 
 void FileSystem::create_link(const std::string &link_name,
                              const std::string &linked_name)
@@ -705,8 +691,7 @@ void FileSystem::create_link(const std::string &link_name,
 void FileSystem::init_inodes()
 {
     this->drive->seekp(inodes_offset);
-    Inode *inodes = new Inode[this->superblock.max_file_count]{0, 0, 0, {0}, 0,
-                                                               0, 0, 0};
+    Inode *inodes = new Inode[this->superblock.max_file_count]{{0, 0, 0, {0}, 0, 0, 0, 0}};
     this->drive->write(reinterpret_cast<char *>(inodes),
                        sizeof(inodes));
     delete[] inodes;
@@ -740,7 +725,6 @@ void FileSystem::init_drive()
     this->init_bitmap();
 
     this->init_blocks();
-
 }
 
 FileSystem::FileSystem(const std::string &file_name, const int &bytes)
@@ -758,13 +742,13 @@ FileSystem::FileSystem(const std::string &file_name, const int &bytes)
 
     this->drive = std::make_unique<std::fstream>(file_name,
                                                  std::ios::in |
-                                                 std::ios::out |
-                                                 std::ios::trunc);
+                                                     std::ios::out |
+                                                     std::ios::trunc);
 
     this->inodes_offset = sizeof(superblock);
     this->bitmap_offset = this->inodes_offset +
                           this->superblock.max_file_count *
-                          sizeof(Inode);
+                              sizeof(Inode);
     this->blocks_offset = this->bitmap_offset + bitmap_size;
     std::cout << this->inodes_offset << " " << this->bitmap_offset << " "
               << this->blocks_offset << std::endl;
@@ -772,7 +756,6 @@ FileSystem::FileSystem(const std::string &file_name, const int &bytes)
     this->init_drive();
 
     this->create_root();
-
 }
 
 FileSystem::~FileSystem()
@@ -790,8 +773,8 @@ void FileSystem::cplocal(const std::string &local_name,
     char *data = new char[size];
     local_stream.read(data, size);
     create_file(
-            ((virtual_name[0] == '/') ? (virtual_name) : ("/" + virtual_name)),
-            FILE_TYPE::FILE);
+        ((virtual_name[0] == '/') ? (virtual_name) : ("/" + virtual_name)),
+        FILE_TYPE::FILE);
     int index = this->find_file_in_dir(virtual_name);
     Inode root = read_inode(0);
     write_file(index, data, size, 0);
@@ -832,7 +815,7 @@ void FileSystem::mkdir(const std::string &name)
         inters.erase(inters.begin());
     }
     std::string parent_name = "/";
-    for (auto &inter: inters)
+    for (auto &inter : inters)
     {
         try
         {
@@ -862,7 +845,7 @@ void FileSystem::rm(const std::string &file_name)
     int index = this->find_file_in_dir(name);
     Inode inode = read_inode(index);
     int parent_index = this->find_file_in_dir(
-            name.substr(0, name.rfind("/") + 1));
+        name.substr(0, name.rfind("/") + 1));
     if ((inode.flags & INODE_MODE_MASK) == FILE_TYPE::DIR)
     {
         throw NotAFileException();
@@ -883,8 +866,8 @@ void FileSystem::rm(const std::string &file_name)
 }
 
 //
-//void
-//FileSystem::link(const std::string &file_name, const std::string &link_name)
+// void
+// FileSystem::link(const std::string &file_name, const std::string &link_name)
 //{
 //    uint32_t linked_index = find_file_in_dir(link_name);
 //
@@ -901,7 +884,6 @@ void FileSystem::extend(const std::string &name, int bytes)
     resize_file(dir_index, inode.size + bytes);
 }
 
-
 void FileSystem::truncate(const std::string &name, int bytes)
 {
     int dir_index = this->find_file_in_dir(name);
@@ -912,7 +894,6 @@ void FileSystem::truncate(const std::string &name, int bytes)
     }
     resize_file(dir_index, inode.size - bytes);
 }
-
 
 std::string FileSystem::ls(const std::string &directory)
 {
@@ -929,12 +910,12 @@ std::string FileSystem::ls(const std::string &directory)
     for (uint64_t pos = 0; pos < remaining_size;)
     {
         uint32_t name_size, inode_pointer;
-        read_file(dir_index, reinterpret_cast<char *>( &inode_pointer ),
+        read_file(dir_index, reinterpret_cast<char *>(&inode_pointer),
                   sizeof(uint32_t), pos);
         Inode inode = read_inode(inode_pointer);
         mask_type type = inode.flags & INODE_MODE_MASK;
         pos += sizeof(uint32_t);
-        read_file(dir_index, reinterpret_cast<char *>( &name_size ),
+        read_file(dir_index, reinterpret_cast<char *>(&name_size),
                   sizeof(uint32_t), pos);
         pos += sizeof(uint32_t);
         char *name_buffer = new char[name_size + 1];
@@ -942,15 +923,15 @@ std::string FileSystem::ls(const std::string &directory)
         name_buffer[name_size] = '\0';
         switch (type)
         {
-            case FILE_TYPE::FILE:
-                result << "F ";
-                break;
-            case FILE_TYPE::DIR:
-                result << "D ";
-                break;
-            case FILE_TYPE::LINK:
-                result << "L ";
-                break;
+        case FILE_TYPE::FILE:
+            result << "F ";
+            break;
+        case FILE_TYPE::DIR:
+            result << "D ";
+            break;
+        case FILE_TYPE::LINK:
+            result << "L ";
+            break;
         }
         result << name_buffer << ((type == FILE_TYPE::DIR) ? ("/ ") : (" "))
                << inode.size << std::endl;

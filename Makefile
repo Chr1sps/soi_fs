@@ -1,7 +1,8 @@
-CXX = g++
+CXX = clang++
 INCLUDE = include
 SRC = src
-CXX_FLAGS = -g -Wall -Wextra -pedantic -Werror -std=c++2a
+CXX_FLAGS = -std=c++2b -Wall -Wextra -Wshadow -Wformat=2 -Wunused -Wpedantic -Werror
+LINK_FLAGS = -fsanitize=undefined
 
 HEADERS = $(INCLUDE)/*
 
@@ -11,7 +12,7 @@ OBJS = $(patsubst $(SRC)/%.cpp,%.o,$(SRCS))
 all: link clean
 
 link: $(OBJS)
-	$(CXX) $(CXX_FLAGS) $(OBJS) -I$(INCLUDE) -Llib -g -o fs.out
+	$(CXX) $(LINK_FLAGS) $(OBJS) -I$(INCLUDE) -g -o fs.out
 
 %.o: $(SRC)/%.cpp $(HEADERS)
 	$(CXX) $(CXX_FLAGS) -I$(INCLUDE) -c -g $< -o $@
