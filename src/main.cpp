@@ -33,7 +33,17 @@ int main(int argc, char **argv)
             else if (command == "extract")
                 fs.cpvirtual(first_arg, second_arg);
             else if (command == "mkdir")
-                fs.mkdir(first_arg);
+            {
+                try
+                {
+                    fs.mkdir(first_arg);
+                }
+                catch (const std::exception &e)
+                {
+                    std::cerr << e.what() << std::endl;
+                }
+            }
+
             //            else if (command == "rmdir")
             //                fs.rmdir(first_arg);
             else if (command == "rm")
